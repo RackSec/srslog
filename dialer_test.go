@@ -4,8 +4,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"io/ioutil"
-	"reflect"
-	"runtime"
 	"testing"
 )
 
@@ -19,37 +17,32 @@ func TestGetDialer(t *testing.T) {
 	}
 
 	dialer := w.getDialer()
-	name := runtime.FuncForPC(reflect.ValueOf(dialer).Pointer()).Name()
-	if name != "github.com/RackSec/srslog.(Writer).(github.com/RackSec/srslog.unixDialer)-fm" {
-		t.Errorf("should get unixDialer, got: %v", name)
+	if "unixDialer" != dialer.Name {
+		t.Errorf("should get unixDialer, got: %v", dialer)
 	}
 
 	w.network = "tcp+tls"
 	dialer = w.getDialer()
-	name = runtime.FuncForPC(reflect.ValueOf(dialer).Pointer()).Name()
-	if name != "github.com/RackSec/srslog.(Writer).(github.com/RackSec/srslog.tlsDialer)-fm" {
-		t.Errorf("should get tlsDialer, got: %v", name)
+	if "tlsDialer" != dialer.Name {
+		t.Errorf("should get tlsDialer, got: %v", dialer)
 	}
 
 	w.network = "tcp"
 	dialer = w.getDialer()
-	name = runtime.FuncForPC(reflect.ValueOf(dialer).Pointer()).Name()
-	if name != "github.com/RackSec/srslog.(Writer).(github.com/RackSec/srslog.basicDialer)-fm" {
-		t.Errorf("should get basicDialer, got: %v", name)
+	if "basicDialer" != dialer.Name {
+		t.Errorf("should get basicDialer, got: %v", dialer)
 	}
 
 	w.network = "udp"
 	dialer = w.getDialer()
-	name = runtime.FuncForPC(reflect.ValueOf(dialer).Pointer()).Name()
-	if name != "github.com/RackSec/srslog.(Writer).(github.com/RackSec/srslog.basicDialer)-fm" {
-		t.Errorf("should get basicDialer, got: %v", name)
+	if "basicDialer" != dialer.Name {
+		t.Errorf("should get basicDialer, got: %v", dialer)
 	}
 
 	w.network = "something else entirely"
 	dialer = w.getDialer()
-	name = runtime.FuncForPC(reflect.ValueOf(dialer).Pointer()).Name()
-	if name != "github.com/RackSec/srslog.(Writer).(github.com/RackSec/srslog.basicDialer)-fm" {
-		t.Errorf("should get basicDialer, got: %v", name)
+	if "basicDialer" != dialer.Name {
+		t.Errorf("should get basicDialer, got: %v", dialer)
 	}
 }
 
