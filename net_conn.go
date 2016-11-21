@@ -24,6 +24,11 @@ func (n *netConn) writeString(framer Framer, formatter Formatter, p Priority, ho
 	return err
 }
 
+// read bytes from the socket
+func (n *netConn) read(b []byte) (int, error) {
+	return n.conn.Read(b)
+}
+
 // close the network connection
 func (n *netConn) close() error {
 	return n.conn.Close()
