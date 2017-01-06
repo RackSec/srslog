@@ -567,6 +567,10 @@ func (c testLocalConn) Write(b []byte) (int, error) {
 	return len(b), nil
 }
 
+func (c testLocalConn) Read(b []byte) (int, error) {
+	return 0, nil
+}
+
 func (c testLocalConn) Close() error {
 	return nil
 }

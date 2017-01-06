@@ -17,8 +17,9 @@ type Writer struct {
 	framer    Framer
 	formatter Formatter
 
-	mu   sync.RWMutex // guards conn
-	conn serverConn
+	mu            sync.RWMutex // guards conn
+	conn          serverConn
+	needReconnect bool
 }
 
 // getConn provides access to the internal conn, protected by a mutex. The
@@ -54,6 +55,10 @@ func (w *Writer) connect() (serverConn, error) {
 	if err == nil {
 		w.setConn(conn)
 		w.hostname = hostname
+		w.setNeedReconnect(false)
+		if w.network == "tcp" || w.network == "tcp+tls" {
+			go w.checkForRemoteDisconnect()
+		}
 
 		return conn, nil
 	} else {
@@ -153,7 +158,8 @@ func (w *Writer) writeAndRetry(p Priority, s string) (int, error) {
 	pr := (w.priority & facilityMask) | (p & severityMask)
 
 	conn := w.getConn()
-	if conn != nil {
+	needReconnect := w.getNeedReconnect()
+	if conn != nil && !needReconnect {
 		if n, err := w.write(conn, pr, s); err == nil {
 			return n, err
 		}
@@ -182,4 +188,50 @@ func (w *Writer) write(conn serverConn, p Priority, msg string) (int, error) {
 	// bytes printed by Fprintf, because this must behave like
 	// an io.Writer.
 	return len(msg), nil
+}
+
+// checkForRemoteDisconnect attempts to read from the socket, because if that
+// fails we know the remote server has closed the connection and we're going to
+// want to reconnect before sending another message
+func (w *Writer) checkForRemoteDisconnect() {
+	// since we don't expect the server to send data back to us, this for
+	// loop should never execute more than once; just in case something
+	// strange happens, we'll be ready for it
+	for {
+		// we can use the conn from multiple goroutines at once, but we need
+		// to lock in order to get access to the variable itself
+		conn := w.getConn()
+
+		// if there is no conn, we will need to reconnect
+		if conn == nil {
+			w.setNeedReconnect(true)
+			return
+		}
+
+		// read is blocking, so this will hang until it either succeeds or
+		// fails; since syslog servers don't write back to us, we never
+		// expect this to succeed; but if it fails, it means the syslog server
+		// disconnected unexpectedly and we'll want to reconnect to it
+		b := make([]byte, 1)
+		_, err := conn.read(b)
+		if err != nil {
+			w.setNeedReconnect(true)
+			return
+		}
+	}
+}
+
+// setNeedReconnect updates our variable that keeps track of whether the
+// remote syslog server has unexpectedly closed the connection, and locks
+// the mutex to protect us from race conditions
+func (w *Writer) setNeedReconnect(needReconnect bool) {
+	w.mu.Lock()
+	w.needReconnect = needReconnect
+	w.mu.Unlock()
+}
+
+func (w *Writer) getNeedReconnect() bool {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	return w.needReconnect
 }

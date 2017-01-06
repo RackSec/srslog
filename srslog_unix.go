@@ -32,7 +32,7 @@ func unixSyslog() (conn serverConn, err error) {
 // localConn adheres to the serverConn interface, allowing us to send syslog
 // messages to the local syslog daemon over a Unix domain socket.
 type localConn struct {
-	conn io.WriteCloser
+	conn io.ReadWriteCloser
 }
 
 // writeString formats syslog messages using time.Stamp instead of time.RFC3339,
@@ -46,6 +46,11 @@ func (n *localConn) writeString(framer Framer, formatter Formatter, p Priority, 
 	}
 	_, err := n.conn.Write([]byte(framer(formatter(p, hostname, tag, msg))))
 	return err
+}
+
+// read bytes from the socket
+func (n *localConn) read(b []byte) (int, error) {
+	return n.conn.Read(b)
 }
 
 // close the (local) network connection

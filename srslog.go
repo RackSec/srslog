@@ -12,6 +12,7 @@ import (
 // and enables Solaris support (see syslog_unix.go).
 type serverConn interface {
 	writeString(framer Framer, formatter Formatter, p Priority, hostname, tag, s string) error
+	read(b []byte) (int, error)
 	close() error
 }
 
