@@ -46,3 +46,8 @@ func RFC5424Formatter(p Priority, hostname, tag, content string) string {
 		p, 1, timestamp, hostname, appName, pid, tag, content)
 	return msg
 }
+func LoggerFormatter(p Priority, hostname, tag, content string) string {
+    msg := fmt.Sprintf("<%d>%s: %s",
+        p, tag, content)
+    return msg
+}
