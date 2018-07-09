@@ -17,6 +17,9 @@ type Writer struct {
 	framer    Framer
 	formatter Formatter
 
+	//non-nil if custom dialer set, used in getDialer
+	customDial DialFunc
+
 	mu   sync.RWMutex // guards conn
 	conn serverConn
 }
