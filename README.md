@@ -35,12 +35,6 @@ You can still use it for local syslog:
 w, err := syslog.Dial("", "", syslog.LOG_ERR, "testtag")
 ```
 
-Or to unencrypted UDP:
-
-```
-w, err := syslog.Dial("udp", "192.168.0.50:514", syslog.LOG_ERR, "testtag")
-```
-
 Or to unencrypted TCP:
 
 ```
